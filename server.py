@@ -9,6 +9,7 @@ import pyaes
 HOST = 'localhost'
 PORT = 9876
 
+
 class Server(threading.Thread):
 	def __init__(self, host, port):
 		super().__init__(daemon=True, target=self.run)

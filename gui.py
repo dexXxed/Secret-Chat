@@ -206,7 +206,7 @@ class ChatWindow(Window):
         """Send message from entry field to target"""
         text = self.entry.get(1.0, tk.END)
         if text != '\n':
-            #message = 'msg;' + self.login + ';' + self.target + ';' + text[:-1]
+            # message = 'msg;' + self.login + ';' + self.target + ';' + text[:-1]
             message = text[:-1]
             print(message)
             self.gui.send_message(message)

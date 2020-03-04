@@ -1,5 +1,4 @@
 # Secret Chat
-[![GitHub license](./img/apache2.svg)]()
 
 *"This is a private conversation."*
 

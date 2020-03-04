@@ -19,23 +19,24 @@
 	2 means normal communication. This means action field is available.
 """
 
+
 def make_protocol_msg(message, dest_addr, affair, host, port, action=None):
 	# input: parameters
 	# return: string, the message
-	head =  dest_addr + '\r\n'
+	head = dest_addr + '\r\n'
 	head += str(host) + ':' + str(port) + '\r\n'
 	head += 'server.py' + '\r\n'
 	head += str(affair) + '\r\n'
 	head += str(len(head)) + '\r\n'
 	if action is not None:
-		head +=  action + '\r\n'
+		head += action + '\r\n'
 
 	protocol = head + message
 	return protocol
 
 
 def analyze_protocol_msg(data):
-	# inupt: data --- string
+	# input: data --- string
 	# return: dictionary
 	ret = dict()
 	labels = ['des', 'src', 'agent', 'affair', 'head_length', 'msg']
