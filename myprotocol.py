@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-''' 
+"""
 	des <hostname>:<port>
 	src <hostname>:<port>
 	user-agent <xxx.py>
@@ -10,7 +10,7 @@
 	action: login(0)/chatToOne(1 + username)/broadcast(2)/logout(3)  client ---> server
 		server--->client action 2 is preserverd for updating user list.
 	msg
-'''
+"""
 
 """
 	affair: 
@@ -42,11 +42,11 @@ def analyze_protocol_msg(data):
 	labels = ['des', 'src', 'agent', 'affair', 'head_length', 'msg']
 	pt = 0
 	for label in labels[:-1]:
-		pt = data.find('\r\n') # pt points at '\r'
+		pt = data.find('\r\n')  # pt points at '\r'
 		if pt != -1:
 			ret[label] = data[0: pt]
-			if len(data[pt+1:]) > 1:
-				data = data[pt+2:]
+			if len(data[pt + 1:]) > 1:
+				data = data[pt + 2:]
 			else:
 				data = ''
 		else:
@@ -56,8 +56,8 @@ def analyze_protocol_msg(data):
 	pt = data.find('\r\n')
 	if pt != -1:
 		ret['action'] = data[0:pt]
-		if len(data[pt+1:]) > 1:
-			data = data[pt+2:]
+		if len(data[pt + 1:]) > 1:
+			data = data[pt + 2:]
 		else:
 			data = ''
 	ret[labels[-1]] = data

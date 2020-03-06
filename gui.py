@@ -1,7 +1,7 @@
-import tkinter as tk
 import threading
-from tkinter import scrolledtext
+import tkinter as tk
 from tkinter import messagebox
+from tkinter import scrolledtext
 
 ENCODING = 'utf-8'
 

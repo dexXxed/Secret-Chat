@@ -1,11 +1,12 @@
-import socket
-import threading
 import queue
 import select
-from gui import *
+import socket
+import threading
 import time
-from myprotocol import *
+
 import pyaes
+from gui import *
+from myprotocol import *
 from transliterate import translit
 
 HOST = 'localhost'
