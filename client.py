@@ -6,6 +6,7 @@ from gui import *
 import time
 from myprotocol import *
 import pyaes
+from transliterate import translit
 
 HOST = 'localhost'
 PORT = 9876
@@ -136,7 +137,8 @@ class Client(threading.Thread):
             # when user logging in, GUI notifies server with the user input(uesrname)
             self.login_user = data
             act = '0'
-        en_data = self.encapsulate(data, action=act)
+
+        en_data = self.encapsulate(translit(data, "ru", reversed=True), action=act)
         self.queue.put(en_data)
 
         if action == 'logout':

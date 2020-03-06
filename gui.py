@@ -22,11 +22,11 @@ class GUI(threading.Thread):
 
     @staticmethod
     def display_alert(message):
-        """Display alert box"""
+        """Окно вывода ошибки"""
         messagebox.showinfo('Error', message)
 
     def update_login_list(self, active_users):
-        """Update login list in main window with list of users"""
+        """Обновление списка логинов в главном окне (списка пользователей)"""
         self.main_window.update_login_list(active_users)
 
     def display_message(self, message):
@@ -49,7 +49,6 @@ class GUI(threading.Thread):
 
     def notify_server(self, message, action):
         """Notify server after action was performed"""
-        #data = action + ";" + message
         data = message
         # data = data.encode(ENCODING)  do not encode before sending!
         self.client.notify_server(data, action)
