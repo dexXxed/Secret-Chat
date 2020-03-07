@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 """
 	des <hostname>:<port>
 	src <hostname>:<port>

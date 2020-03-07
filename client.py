@@ -15,56 +15,56 @@ PORT = 9876
 
 class Client(threading.Thread):
     def __init__(self, host, port):
-        # target is the callable object to be invoked by the run() method
+        # цель вызываемого объекта быть вызванным методом run()
         super().__init__(daemon=True, target=self.run)
 
-        # get local machine name, also the server
+        # получаем имя текущей машины и также сервер
         self.host = host
         self.port = port
         self.sock = None
 
-        # used by GUI
-        # write buffer: from cliet to server
-        # CHANGE! store bytes
+        # используется в GUI
+        # записываем в буфер: от клиента к серверу
+        # ИЗМЕНИТЬ! хранит байты
         self.queue = queue.Queue()
         self.target = ''
 
-        # the name of the login user
+        # имя пользователя (его логин)
         self.login_user = ''
 
-        # used in I/O
+        # используется I/O
         self.lock = threading.RLock()
         self.buffer_size = 2048
 
         self.dest_addr = str(self.host) + ':' + str(self.port)
 
-        # a bytes-like object geneated by __make_password
+        # объект байт, сгенерированный  __make_password
         self.__password = None
 
         self.connected = self.connect_to_server()
         if self.connected:
             self.gui = GUI(self)
-            self.start()  # start the Client thread
-            self.gui.start()  # start the GUI thread
+            self.start()  # начало Client потока
+            self.gui.start()  # начало GUI потока
 
-    def __validate_host(self, hostname):
+    @staticmethod
+    def __validate_host(hostname):
         return type(hostname) is str and len(hostname) != 0
 
-    def __make_password(self):
+    @staticmethod
+    def __make_password():
         import random
         import string
-        # generate random 32-bytes password
+        # генерирование 32-байтового пароля
         password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(32))
         return password.encode()
 
-    def __validate_paten(self, public, modulus):
-        # to do
-        return True
-
-    def __encrypt(self, meg, public_key, n):
+    @staticmethod
+    def __encrypt(meg, public_key, n):
         return ' '.join([str((ord(ch) ** public_key) % n) for ch in meg])
 
-    def str2int(self, *strs):
+    @staticmethod
+    def str2int(*strs):
         return tuple([int(x) for x in strs])
 
     def connect_to_server(self):
@@ -75,11 +75,11 @@ class Client(threading.Thread):
             print('Inactive server, fail to connect.')
             return False
 
-        # after connected, start RSA encryption
-        # first requst toward server with user name
+        # после подключения начинаем RSA шифрование
+        # первый запрос к серверу с именем пользователя
         self.sock.sendall(make_protocol_msg(self.login_user, self.dest_addr, 0, self.host, self.port).encode())
 
-        # reveive a public paten
+        # получение публичного сообщения
         rev_dict = analyze_protocol_msg(self.sock.recv(2048).decode('utf-8'))
         print(rev_dict)
 
@@ -91,18 +91,18 @@ class Client(threading.Thread):
         public, modulus = self.str2int(public, modulus)
 
         if self.__validate_paten(public, modulus):
-            # generate a client password
+            # генерируем пароль клиента
             self.__password = self.__make_password()
             raw_msg = make_protocol_msg(self.__password.decode(), self.dest_addr, 1, self.host, self.port)
-            # encrypt the password using public paten
+            # шифруем пароль, используя публичный ключ
             encr_msg = self.__encrypt(raw_msg, public, modulus)
-            # send the encrpted password to server
+            # отправляем зашифрованный пароль на сервер
             self.sock.sendall(encr_msg.encode())
         else:
             print('invalid paten')
             return False
 
-        # receive server OK
+        # получение сервером (OK)
         decr_bytes = pyaes.AESModeOfOperationCTR(self.__password).decrypt(self.sock.recv(2048))
         rec_dict = analyze_protocol_msg(decr_bytes.decode())
         print(rec_dict)
@@ -113,29 +113,29 @@ class Client(threading.Thread):
         return True
 
     def encapsulate(self, msg, action=None):
-        """ Make protocol and encrypt """
-        # msg --- raw string
-        # return: bytes-like message to send
+        """ Сам протокол и шифрование """
+        # сообщение - необработанная строка
+        # возвращает: байтовое сообщение для отправки
         protocol = make_protocol_msg(msg, self.target, 2, self.host, self.port, action=action)
         encr_msg = pyaes.AESModeOfOperationCTR(self.__password).encrypt(protocol)
         return encr_msg
 
     def clear_queue(self):
-        """ Clear queue by sending all messages"""
+        """ Очищаем очередь отправляя все сообщения """
         while not self.queue.empty():
             data = self.queue.get()
             self.send(data)
 
-    # called by GUI
+    # вызываемое GUI
     def notify_server(self, data, action):
-        # data --- raw string, the data of the action<login/logout>
+        # данные - необработанная строка, данные при действиях логина и логаута
         print('client notifies server:', data, action)
-        # self.queue.put(data)
+
         act = None
         if action == "logout":
             act = '3'
         elif action == "login":
-            # when user logging in, GUI notifies server with the user input(uesrname)
+            # когда юзер зашёл, GUI сообщает серверу введенное пользователем имя (username)
             self.login_user = data
             act = '0'
 
@@ -146,18 +146,18 @@ class Client(threading.Thread):
             self.clear_queue()
             self.sock.close()
 
-    # call after receiving data
+    # вызываем после получения данных
     def process_recv_msg(self, data):
         decr_bytes = pyaes.AESModeOfOperationCTR(self.__password).decrypt(data)
         rec_dict = analyze_protocol_msg(decr_bytes.decode())
         print('Client receives: ' + str(rec_dict))
-        # notify other users a new incoming user
+        # оповещаем всех пользователей о "новоприбывшем" пользователе
         if 'action' in rec_dict and rec_dict['action'] == '2':
-            clients = rec_dict['msg'] + ' ALL'  # ALL users for broadcast
+            clients = rec_dict['msg'] + ' ALL'  # ВСЕ пользователи для широковещательных сообщений
             print('update client list: ' + clients)
             self.gui.main_window.update_login_list(clients.split(' '))
         else:
-            # display message in the chat window
+            # отображение сообщения в окне чата
             message = rec_dict['msg']
             sender = rec_dict.get('action', '1 unknown')[2:]
             time_tag = time.asctime(time.localtime(time.time()))
@@ -168,7 +168,7 @@ class Client(threading.Thread):
             self.gui.display_message(message)
 
     def send(self, meg):
-        # meg --- encrypted bytes
+        # сообщение - зашифрованные байты
         with self.lock:
             try:
                 self.sock.sendall(meg)
@@ -184,8 +184,8 @@ class Client(threading.Thread):
         outputs = [self.sock]
         while inputs:
             try:
-                # three lists containing communication channels to monitor
-                # a list of objects to be checked for incoming data to be read
+                # три списка, содержащие коммуникационные каналы для мониторинга
+                # список объектов, который должен быть проверен на считывание входящих данных
                 # a list of objects to receive outgoing data when there is room in buffer
                 # a list of those that may have errors, often mixed of the input and output
                 #  returns three new lists, containing subsets of the contents of the lists passed in
@@ -237,6 +237,6 @@ class Client(threading.Thread):
                 break
 
 
-# Create new client with (IP, port)
+# Создание нового клиента с помощью связки IP и порт
 if __name__ == '__main__':
     Client(HOST, PORT)
