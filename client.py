@@ -186,9 +186,9 @@ class Client(threading.Thread):
             try:
                 # три списка, содержащие коммуникационные каналы для мониторинга
                 # список объектов, который должен быть проверен на считывание входящих данных
-                # a list of objects to receive outgoing data when there is room in buffer
-                # a list of those that may have errors, often mixed of the input and output
-                #  returns three new lists, containing subsets of the contents of the lists passed in
+                # список объеков для получения исходящих данных где находится "комната" в буфере
+                # список того, что может иметь ошибки, часто перемешанное с вводом и выводом
+                # возвращает 3 новых списка, содержащих подмножества данных спиков, отправляемых на вход
                 readable, writable, exceptional = select.select(inputs, outputs, inputs)
             except ValueError:
                 print('Server error')
@@ -216,13 +216,12 @@ class Client(threading.Thread):
             if self.sock in writable:
                 try:
                     if not self.queue.empty():
-                        # Remove and return an item from the queue.
+                        # Удаляем и возвращаем элемеент из очереди
                         data = self.queue.get()
                         self.send(data)
-                        # Indicate that a formerly enqueued task is complete. Used by queue consumer threads.
                         self.queue.task_done()
                     else:
-                        # Suspend execution of the calling thread for the given number of seconds.
+                        # Приостановить исполнение вызывая поток на заданное кол-во времени
                         time.sleep(0.1)
                 except socket.error:
                     print('Socket error in reading')
