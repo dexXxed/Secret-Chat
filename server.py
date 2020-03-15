@@ -17,51 +17,50 @@ class Server(threading.Thread):
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # get local machine name
+        # получаем имя локальной машины
         self.host = host
         self.port = port
 
         self.buffer_size = 2048
 
-        # used as write buffer
-        # key: client_socket  value: queue of encrypted bytes
-        # sent by client_sock.send()
+        # используется для записи в буфер
+        # ключ: client_socket
+        # значени: очередь зашифрованных байт
+        # отправка с помощью client_sock.send()
         self.msg_queues = {}
 
-        # record all connection sockets
+        # записываем все подключенные сокеты
         self.connection_list = []
 
-        # key: login_user(the name string)
-        # value: client_socket
+        # ключ: login_user
+        # значение: client_socket
         self.login_dict = {}
 
-        # key: client_socket
-        # value: client password string
+        # ключ: client_socket
+        # значение: строка пароля клиента
         self.__password_dict = {}
 
-        # A reentrant lock must be released by the thread that acquired it.
-        # Once a thread has acquired a reentrant lock, the same thread may acquire it again without blocking;
-        # the thread must release it once for each time it has acquired it.
+        # Повторно входящая блокировка должна быть снята тем потоком, который ее затронул
+        # Как только поток получил блокировку повторного входа, тот же поток может получить ее снова без блокировки;
+        # поток должен освобождать его каждый раз, когда он его получил.
         self.lock = threading.RLock()
 
-        # Socket setup
+        # установка сокета
         self.shutdown = False
         try:
-            # bind to the port with this server
+            # привязка к порту с этим сервером
             self.server_socket.bind((str(self.host), int(self.port)))
-            # queue up to 5 requests
+            # очередь до 5 запросов
             self.server_socket.listen(10)
 
-            # self.server_socket.setblocking(False)
-
-            # start the server thread
+            # запускаем поток сервера
             self.start()
         except socket.error:
             self.shutdown = True
 
-        # main loop
+        # главный цикл
         while not self.shutdown:
-            # waiting for cmd
+            # ждем командную строку
             msg = input()
             if msg == 'quit':
                 for sock in self.connection_list:
@@ -96,7 +95,7 @@ class Server(threading.Thread):
         while True:
             with self.lock:
                 try:
-                    # passively accept TCP client connection, waiting until connection arrives.
+                    # пасивно принимает TCP клиентское подключение, пока ждет подключения
                     client_sock, addr = self.server_socket.accept()
                 except socket.error:
                     time.sleep(1)
@@ -105,7 +104,6 @@ class Server(threading.Thread):
             print("Got a connection from %s" % str(addr))
             print('Socket connects %s and %s' % client_sock.getsockname(), client_sock.getpeername())
 
-            # client_sock.setblocking(False)
             if client_sock not in self.connection_list:
                 self.connection_list.append(client_sock)
 
@@ -126,18 +124,18 @@ class ClientThread(threading.Thread):
         self.address = address
         self.buffer_size = 2048
 
-        # the user name
+        # имя пользователя
         self.login_user = ''
         self.inputs = []
         self.outpus = []
 
-        # a string received from client
+        # строка, получаемая от клиента
         self.__password = None
 
         self.start()
 
     def run(self):
-        """ Main method for client thread processing client socket"""
+        """ Главный метод для обработки клиентского потока, клиентского сокета """
         print('New thread started for connection from ' + str(self.address))
         self.inputs = [self.sock]
         self.outpus = [self.sock]
@@ -156,7 +154,7 @@ class ClientThread(threading.Thread):
                     break
 
                 shutdown = self.process_recv_data(data)
-                # disconnect when empty data or logout
+                # отключаем, когда получаем пустые данные или при выходе
                 if shutdown:
                     self.disconnect()
                     break
@@ -165,7 +163,7 @@ class ClientThread(threading.Thread):
                 if not self.master.msg_queues[self.sock].empty():
                     data = self.master.msg_queues[self.sock].get()
                     try:
-                        # sent by socket directly
+                        # отправляем прямо в сокет
                         self.sock.send(data)
                     except socket.error:
                         self.disconnect()
@@ -174,7 +172,7 @@ class ClientThread(threading.Thread):
             if self.sock in exceptional:
                 self.disconnect()
 
-        # out of the main loop
+        # выход из главного цикла
         print('Closing {} thread, connection'.format(self.login_user))
 
     def __broadcast(self, msg):
@@ -187,26 +185,26 @@ class ClientThread(threading.Thread):
                 print('No such a client.')
 
     def update_client_list(self):
-        # Tell all users that client list has changed
+        # Сказать всем пользователям, что список клиентов изменился
         print('update_client_list')
-        # used by GUI
+        # используется в GUI
         clients = ' '.join([user for user in self.master.login_dict])
         msg = make_protocol_msg(clients, 'ALL', '2', HOST, PORT, action='2')
         self.__broadcast(msg)
 
     def disconnect(self):
-        """disconnect from server"""
+        """ Отсоединимся от сервера """
         print('Client {} has disconnected.'.format(self.login_user))
-        # remove related info in Server
+        # удалим связанную информацию с Сервером
         self.master.remove_user(self.login_user, self.sock)
         self.sock.close()
         self.update_client_list()
 
     def process_recv_data(self, data):
-        # return a shutdown signal
+        # возвратим сигнал выключения
         if data is None or data == '':
             return True
-        # data --- unicode bytes for the first time, but encrypted bytes later
+        # data --- байты unicode, которые далее стают зашифрованными
         shutdown = False
         try:
             data = data.decode('utf-8')
@@ -216,57 +214,54 @@ class ClientThread(threading.Thread):
         rec_dict = analyze_protocol_msg(data)
         print('Server receives: %s' % str(rec_dict))
 
-        # check for first connection
+        # проверяем первое соединение
         if rec_dict['affair'] == '0':
 
-            # send the paten to client
             public, private, modulus = self.__make_keys()
             mes = make_protocol_msg(str(public) + ' ' + str(modulus), rec_dict['src'], '1', HOST, PORT)
             self.sock.sendall(mes.encode())
 
-            # receive client password
+            # получаем клиентский пароль
             meg = self.__decrypt(self.sock.recv(1024).decode('utf-8'), private, modulus)
             rec_dict = analyze_protocol_msg(meg)
             print('receive: %s' % str(rec_dict))
             self.__password = rec_dict['msg']
 
             print('ready for login')
-            # reply to the client of successful loggin
+            # отвечаем на клиентский успешный вход
             msg = make_protocol_msg('ready for login', rec_dict['src'], '2', HOST, PORT, action='0')
             cipher_bytes = pyaes.AESModeOfOperationCTR(self.__password.encode()).encrypt(msg)
             self.sock.sendall(cipher_bytes)
 
-        # Normal Communication
+        # Обычное Подключение
         elif rec_dict['affair'] == '2' and self.__password is not None:
-            # action field available
+            # action поле доступно
             if 'action' in rec_dict:
                 action = rec_dict['action']
 
-                # user login
+                # вход пользователя
                 if action == '0':
-                    # get the name of the login user
+                    # получаем имя пользователя
                     self.login_user = rec_dict['msg']
 
-                    # allocate this socket to this user
                     if self.login_user in self.master.login_dict:
                         print('redundent login. Switch to new.')
                         self.master.remove_user(self.login_user, self.master.login_dict[self.login_user])
                     self.master.login_dict[self.login_user] = self.sock
                     self.master.set_password(self.sock, self.__password)
 
-                    # tell all users the login of a new one
+                    # говорим всем пользователям, что есть новый пользователь
                     self.update_client_list()
 
-                # user log out
+                # выход пользователя
                 elif action == '3':
                     shutdown = True
 
-                # one-to-one chat
+                # one-to-one чат
                 elif action[0] == '1':
                     to_user = action[2:]
                     from_user = self.login_user
                     if to_user in self.master.login_dict:
-                        # get the connection socket of the target client
                         sock = self.master.login_dict[to_user]
                         msg = rec_dict['msg']
                         print('message from ' + from_user + ' sent to ' + to_user + ': ' + msg)
@@ -279,11 +274,11 @@ class ClientThread(threading.Thread):
                         else:
                             print('cannot find pswd of user ' + to_user)
 
-                # broadcast
+                # широковещательное сообщение
                 elif action[0] == '2':
                     msg = rec_dict['msg']
                     print('message broadcase: ' + msg)
-                    # action='2' has preserved for updating list, use action='1' instead
+
                     msg = make_protocol_msg(msg, 'ALL', 2, self.address[0], self.address[1],
                                             action='1 ' + self.login_user)
                     self.__broadcast(msg)
@@ -292,7 +287,8 @@ class ClientThread(threading.Thread):
                 print('no action available')
         return shutdown
 
-    def extended_euclidean(self, a, b):
+    @staticmethod
+    def extended_euclidean(a, b):
         # xa + yb = gcd(a, b)
         x, y, u, v = 0, 1, 1, 0
         while a != 0:
@@ -302,6 +298,7 @@ class ClientThread(threading.Thread):
         gcd = b
         return gcd, x, y
 
+    # отрефакторить это ПРОСТО НЕОБХОДИМО
     def __make_keys(self):
         prime_P = 11
         prime_Q = 13
@@ -315,10 +312,11 @@ class ClientThread(threading.Thread):
     def __encrypt(self, meg, public_key, n):
         return ' '.join([str((ord(ch) ** public_key) % n) for ch in meg])
 
-    def __decrypt(self, data, private_key, n):
+    @staticmethod
+    def __decrypt(data, private_key, n):
         return ''.join([chr((int(x) ** private_key) % n) for x in data.split(' ')])
 
 
-# Create new server with (IP, port)
+# Создаем сервер используя связку IP и порт
 if __name__ == '__main__':
     server = Server(HOST, PORT)

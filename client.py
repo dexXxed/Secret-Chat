@@ -47,11 +47,9 @@ class Client(threading.Thread):
             self.start()  # начало Client потока
             self.gui.start()  # начало GUI потока
 
-    @staticmethod
     def __validate_host(hostname):
         return type(hostname) is str and len(hostname) != 0
 
-    @staticmethod
     def __make_password():
         import random
         import string
@@ -59,11 +57,9 @@ class Client(threading.Thread):
         password = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(32))
         return password.encode()
 
-    @staticmethod
     def __encrypt(meg, public_key, n):
         return ' '.join([str((ord(ch) ** public_key) % n) for ch in meg])
 
-    @staticmethod
     def str2int(*strs):
         return tuple([int(x) for x in strs])
 
