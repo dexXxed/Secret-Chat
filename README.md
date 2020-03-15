@@ -1,32 +1,27 @@
-# Secret Chat
+# Секретный чат
 
 *"This is a private conversation."*
 
-Secret Chat allows you to chat with your important ones in an absolute private and secure manner.
+Секретный чат позволяет вам общаться абсолютно конфиденциально и безопасно.
 
-Requirements
+Требования:
 ------
-Python 3.6
+Python 3.7
 
-Python packages:
-tkinter, threading, socket, queue, time, select, pyaes
+В файле ```requirements.txt``` имеются все необходимые зависимости.
+Выполните команду ```pip install -r requirements.txt``` для установки данных зависимостей.
 
 
-Setup
+Запуск
 ------
-1. type in the command line `python server.py` to start the server process.
+1. В командной строке напишите `python server.py` для запуска сервера.
 
-2. type in the command line `python client.py` to create a new client.
+2. В командной строке напишите `python client.py` для создания нового Клиента.
 
-3. Enter your user name in the blanck and click "login".
+3. Введите имя пользователя и нажмите "Login".
 
-4. Then you can chat with everyone connecting to the same server.
+4. Далее Вы можете переписываться с кем угодно на сервере.
 
-Usage
-------
-1. If you want to chat with someone online, click his/her name inside the name list and type words in the chat window.
-2. To send words, you can either hit the "Enter" buttom of your keyboard or click the "send" buttom of the chat window. If you want to broadcast a message, click "ALL".
-3. To exit the app, just click "Exit".
 
 Notice
 ------
