@@ -9,6 +9,7 @@ from gui import *
 from myprotocol import *
 from transliterate import translit
 
+
 HOST = 'localhost'
 PORT = 9876
 
